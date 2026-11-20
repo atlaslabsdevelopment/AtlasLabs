@@ -1,0 +1,45 @@
+name: Deploy Atlas Labs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: github-pages
+    steps:
+      - name: Check out site history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Recover website ZIP and extract
+        run: |
+          mkdir site
+          if [ -f atlas-labs.zip ]; then
+            cp atlas-labs.zip site.zip
+          else
+            git show 47b140e1b51f9ea2083fb9543e35713ac5fcc04d:atlas-labs.zip > site.zip
+          fi
+          unzip -q site.zip -d site
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build website
+        working-directory: site
+        run: npm install --no-audit --no-fund && npm run build
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+      - name: Deploy website
+        uses: actions/deploy-pages@v4
